@@ -1,0 +1,531 @@
+---
+title: "Prosociality, Teacher-Student Closeness, and Academic Self-Concept in Mathematics: An Autoregressive Cross-Lagged Panel Model in Early Adolescence"
+subtitle: "Journal : Psychological Hub"
+author: ""
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    df_print: tibble
+  pdf_document:
+    toc: true
+    number_sections: true
+    latex_engine: xelatex
+  word_document:
+    toc: true
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  comment = "",
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center")
+set.seed(1123)
+```
+
+`r R.version.string`
+
+# Load packages and dependencies
+
+```{r packages}
+library(haven)
+library(psych)
+library(tidyverse)
+library(lavaan)
+library(apaTables)
+library(writexl)
+library(effsize)
+library(misty)
+library(kableExtra)
+```
+
+# Import Data
+## Load Raw Dataset
+
+```{r load_data}
+myData <- read_sav("myData.sav")
+
+```
+
+## Compute Composite Scores
+
+```{r import}
+
+composite_scores <- list(
+  
+  PRO = c("PROS_1","PROS_2","PROS_3","PROS_4",
+          "PROS_5","PROS_6","PROS_7","PROS_8", 
+          "PROS_9","PROS_10","PROS_11","PROS_12",
+          "PROS_13","PROS_14", "PROS_15","PROS_16"),
+ 
+  T2_PRO = c("T2_PROS_1","T2_PROS_2","T2_PROS_3","T2_PROS_4",
+            "T2_PROS_5","T2_PROS_6","T2_PROS_7","T2_PROS_8", 
+            "T2_PROS_9","T2_PROS_10","T2_PROS_11","T2_PROS_12",
+            "T2_PROS_13","T2_PROS_14", "T2_PROS_15","T2_PROS_16"),
+  
+  T_CLO =c("TeacRelat_1","TeacRelat_3","TeacRelat_5","TeacRelat_10",
+           "TeacRelat_11","TeacRelat_15","TeacRelat_20","TeacRelat_25"), 
+ 
+  T2_T_CLO = c("T2_TeacRelat_1", "T2_TeacRelat_3", "T2_TeacRelat_5", "T2_TeacRelat_10",
+               "T2_TeacRelat_11", "T2_TeacRelat_15", "T2_TeacRelat_20", "T2_TeacRelat_25"),
+ 
+ T2_ASC = c("T2_ASC_1","T2_ASC_2","T2_ASC_3","T2_ASC_4")
+ 
+)
+
+# Composite score calculation ---------------------------------------------
+
+myData$PRO <- rowMeans(myData[, c("PROS_1","PROS_2","PROS_3","PROS_4",
+                                  "PROS_5","PROS_6","PROS_7","PROS_8", 
+                                  "PROS_9","PROS_10","PROS_11","PROS_12",
+                                  "PROS_13","PROS_14", "PROS_15","PROS_16")], na.rm = TRUE)
+
+myData$T2_PRO <- rowMeans(myData[, c("T2_PROS_1","T2_PROS_2","T2_PROS_3","T2_PROS_4",
+                                     "T2_PROS_5","T2_PROS_6","T2_PROS_7","T2_PROS_8", 
+                                     "T2_PROS_9","T2_PROS_10","T2_PROS_11","T2_PROS_12",
+                                     "T2_PROS_13","T2_PROS_14", "T2_PROS_15","T2_PROS_16")], na.rm = TRUE)
+
+myData$T_CLO <- rowMeans(myData[, c("TeacRelat_1","TeacRelat_3","TeacRelat_5","TeacRelat_10",
+                                     "TeacRelat_11","TeacRelat_15","TeacRelat_20","TeacRelat_25")], na.rm = TRUE)
+
+myData$T2_T_CLO <- rowMeans(myData[, c("T2_TeacRelat_1","T2_TeacRelat_3","T2_TeacRelat_5","T2_TeacRelat_10",
+                                        "T2_TeacRelat_11","T2_TeacRelat_15","T2_TeacRelat_20","T2_TeacRelat_25")], na.rm = TRUE)
+
+myData$T2_ASC <- rowMeans(myData[, c("T2_ASC_1","T2_ASC_2","T2_ASC_3","T2_ASC_4")], na.rm = TRUE)
+
+myData %<>%
+  rowwise() %>%
+  mutate(
+    pro11 = mean(c(PROS_1,PROS_2,PROS_3,PROS_4), na.rm=T),
+    pro12 = mean(c(PROS_5,PROS_6,PROS_7,PROS_8), na.rm=T),
+    pro13 = mean(c(PROS_9,PROS_10,PROS_11,PROS_12), na.rm=T),
+    pro14 = mean(c(PROS_13,PROS_14, PROS_15,PROS_16), na.rm=T),
+    
+    pro21 = mean(c(T2_PROS_1 ,T2_PROS_2, T2_PROS_3, T2_PROS_4), na.rm=T),
+    pro22 = mean(c(T2_PROS_5 ,T2_PROS_6, T2_PROS_7, T2_PROS_8), na.rm=T),
+    pro23 = mean(c(T2_PROS_9 ,T2_PROS_10,T2_PROS_11,T2_PROS_12), na.rm=T),
+    pro24 = mean(c(T2_PROS_13,T2_PROS_14,T2_PROS_15,T2_PROS_16), na.rm=T),
+    
+    teac11 = mean(c(TeacRelat_1, TeacRelat_3), na.rm=T),
+    teac12 = mean(c(TeacRelat_5, TeacRelat_10), na.rm=T),
+    teac13 = mean(c(TeacRelat_11,TeacRelat_15), na.rm=T),
+    teac14 = mean(c(TeacRelat_20,TeacRelat_25), na.rm=T),
+    
+    teac21 = mean(c(T2_TeacRelat_1, T2_TeacRelat_3), na.rm=T),
+    teac22 = mean(c(T2_TeacRelat_5, T2_TeacRelat_10), na.rm=T),
+    teac23 = mean(c(T2_TeacRelat_11,T2_TeacRelat_15), na.rm=T),
+    teac24 = mean(c(T2_TeacRelat_20,T2_TeacRelat_25), na.rm=T)
+    
+  )  %>% ungroup()
+
+
+
+```
+
+## Reliability Analysis
+
+```{r Reliability }
+
+my_alpha <- function(data, items) {
+  data %>% 
+    select(all_of(items)) %>% 
+    psych::alpha() %>% 
+    pluck(., "total", "raw_alpha") %>%
+    round(., 2) 
+    # print()
+}
+
+alpha <- map(composite_scores, ~ my_alpha(myData,.))
+alpha <- bind_rows(alpha, .id = "Score_Type")
+alpha <- as.data.frame(t(alpha))
+print(alpha)
+
+extract_omega <- function(data, items)
+{
+  data %>%
+    select(all_of(items)) %>%
+    na.omit() %>%
+    psych::omega(nfactors = 1) %>%
+    pluck(., "omega.tot") %>%
+    round(., 2)
+}
+
+omega <- map(composite_scores, ~ extract_omega(myData,.))
+omega <- bind_rows(omega, .id = "Score_Type")
+omega <- as.data.frame(t(omega))
+print(omega)
+
+```
+
+# Sample Description
+## Split Sample by Wave
+
+```{r Split}
+
+# filter data for T1 or T2 -------------------------------------------------------------
+myData_T1 <-myData %>% filter(T2 == 0)
+myData_T2 <-myData %>% filter(T2 == 1)
+
+```
+
+## Descriptive Statistics
+
+```{r des}
+desc_Rmark <- myData_T2 %>%
+              select(D4_AGE,D5_SEX,SES,PRO,T2_PRO,T_CLO,T2_T_CLO,T2_ASC)  %>%
+              psych::describe(.,ranges = T ,fast = F) %>% as.data.frame() %>% round(., 2)
+
+desc_Rmark <- as.data.frame(desc_Rmark)
+desc_Rmark
+
+
+```
+
+## Zero-Order Correlations
+
+```{r corr}
+# # correlation Matrix
+#
+ cor_Rmark<- (myData_T2 %>%
+              select(D4_AGE,D5_SEX,SES,PRO,T2_PRO,T_CLO,T2_T_CLO,T2_ASC) %>%
+             apa.cor.table())$table.body[c(1, 3, 6,9,12,15,18,21), ]
+
+ cor_Rmark <- as.data.frame(cor_Rmark)
+ cor_Rmark
+```
+
+## Attrition Analysis and Missing Data
+
+```{r attrictin}
+
+myData_miss <- myData %>% select(T2,T_CLO,T2_T_CLO,PRO,T2_PRO)
+myData_miss_MCAR <- myData_miss %>% select(T_CLO,T2_T_CLO,PRO,T2_PRO)
+na.test(data = myData_miss_MCAR)
+```
+
+# Measurement Invariance
+## Prosociality
+### Configural Model
+
+```{r loninvc}
+conf_Pros <- '
+
+# Measurement models
+PROSOC_T1 =~ pro11 + pro12 + pro13 + pro14
+PROSOC_T2 =~ pro21 + pro22 + pro23 + pro24
+
+# Latent covariances
+PROSOC_T1 ~~ PROSOC_T2
+
+# Residual covariances (tra tempi corrispondenti)
+pro11 ~~ pro21
+pro12 ~~ pro22
+pro13 ~~ pro23
+pro14 ~~ pro24
+
+# Intercepts
+pro11 ~ 1
+pro12 ~ 1
+pro13 ~ 1
+pro14 ~ 1
+pro21 ~ 1
+pro22 ~ 1
+pro23 ~ 1
+pro24 ~ 1
+'
+
+fit_conf_Pros <- sem(conf_Pros, data = myData_T2, estimator = "MLR", missing = 'FIML')
+summary(fit_conf_Pros, fit.measures = TRUE, standardized = TRUE)
+```
+
+### Metric Model
+
+```{r loninvm}
+metr_Pros <- '
+PROSOC_T1 =~ 1*pro11 + l2*pro12 + l3*pro13 + l4*pro14
+PROSOC_T2 =~ 1*pro21 + l2*pro22 + l3*pro23 + l4*pro24
+
+PROSOC_T1 ~~ PROSOC_T2
+
+pro11 ~~ pro21
+pro12 ~~ pro22
+pro13 ~~ pro23
+pro14 ~~ pro24
+
+pro11 ~ 1
+pro12 ~ 1
+pro13 ~ 1
+pro14 ~ 1
+pro21 ~ 1
+pro22 ~ 1
+pro23 ~ 1
+pro24 ~ 1
+'
+
+fit_metr_Pros <- sem(metr_Pros, data = myData_T2, estimator = "MLR", missing = 'FIML')
+summary(fit_metr_Pros, fit.measures = TRUE, standardized = TRUE)
+```
+
+### Scalar Model
+
+
+```{r loninvs}
+scal_Pros <- '
+PROSOC_T1 =~ 1*pro11 + l2*pro12 + l3*pro13 + l4*pro14
+PROSOC_T2 =~ 1*pro21 + l2*pro22 + l3*pro23 + l4*pro24
+
+PROSOC_T1 ~~ PROSOC_T2
+
+pro11 ~~ pro21
+pro12 ~~ pro22
+pro13 ~~ pro23
+pro14 ~~ pro24
+
+# Intercepts vincolati
+pro11 ~ 0*1
+pro12 ~ i2*1
+pro13 ~ i3*1
+pro14 ~ i4*1
+
+pro21 ~ 0*1
+pro22 ~ i2*1
+pro23 ~ i3*1
+pro24 ~ i4*1
+
+# Latent means
+PROSOC_T1 ~ 1
+PROSOC_T2 ~ 1
+'
+
+fit_scal_Pros <- sem(scal_Pros,data = myData_T2, estimator = "MLR", missing = 'FIML')
+summary(fit_scal_Pros, fit.measures = TRUE, standardized = TRUE)
+```
+
+### Model Comparisons
+
+```{r Comparisonsl}
+lavTestLRT(fit_conf_Pros, fit_metr_Pros)
+lavTestLRT(fit_metr_Pros, fit_scal_Pros)
+```
+
+## Teacher–Student Closeness
+### Configural Model
+
+```{r tscinvc}
+conf_Teac_parcel <- '
+
+# Measurement models
+TEAC_CLO_T1 =~ teac11 + teac12 + teac13 + teac14
+TEAC_CLO_T2 =~ teac21 + teac22 + teac23 + teac24
+
+# Latent covariances
+TEAC_CLO_T1 ~~ TEAC_CLO_T2
+
+# Residual covariances (parallele tra tempi)
+teac11 ~~ teac21
+teac12 ~~ teac22
+teac13 ~~ teac23
+teac14 ~~ teac24
+
+
+# Intercepts
+teac11 ~ 1
+teac12 ~ 1
+teac13 ~ 1
+teac14 ~ 1
+teac21 ~ 1
+teac22 ~ 1
+teac23 ~ 1
+teac24 ~ 1
+'
+
+fit_conf_Teac_parcel <- sem(conf_Teac_parcel,data = myData_T2, estimator = "MLR", missing = 'FIML')
+summary(fit_conf_Teac_parcel, fit.measures = TRUE, standardized = TRUE)
+```
+
+### Metric Model
+
+```{r tscinvm}
+metr_Teac_parcel <- '
+TEAC_CLO_T1 =~ 1*teac11 + l2*teac12 + l3*teac13 + l4*teac14
+TEAC_CLO_T2 =~ 1*teac21 + l2*teac22 + l3*teac23 + l4*teac24
+
+TEAC_CLO_T1 ~~ TEAC_CLO_T2
+
+teac11 ~~ teac21
+teac12 ~~ teac22
+teac13 ~~ teac23
+teac14 ~~ teac24
+
+
+teac11 ~ 1
+teac12 ~ 1
+teac13 ~ 1
+teac14 ~ 1
+teac21 ~ 1
+teac22 ~ 1
+teac23 ~ 1
+teac24 ~ 1
+'
+
+fit_metr_Teac_parcel <- sem(metr_Teac_parcel, data = myData_T2, estimator = "MLR", missing = 'FIML')
+summary(fit_metr_Teac_parcel, fit.measures = TRUE, standardized = TRUE)
+```
+
+### Scalar Model
+
+```{r tscinvs}
+scal_Teac_parcel <- '
+TEAC_CLO_T1 =~ 1*teac11 + l2*teac12 + l3*teac13 + l4*teac14
+TEAC_CLO_T2 =~ 1*teac21 + l2*teac22 + l3*teac23 + l4*teac24
+
+TEAC_CLO_T1 ~~ TEAC_CLO_T2
+
+teac11 ~~ teac21
+teac12 ~~ teac22
+teac13 ~~ teac23
+teac14 ~~ teac24
+
+
+
+teac11 ~ 0*1
+teac12 ~ i2*1
+teac13 ~ i3*1
+teac14 ~ i4*1
+
+teac21 ~ 0*1
+teac22 ~ i2*1
+teac23 ~ i3*1
+teac24 ~ i4*1
+
+TEAC_CLO_T1 ~ 1
+TEAC_CLO_T2 ~ 1
+'
+
+fit_scal_Teac_parcel <- sem(scal_Teac_parcel, data = myData_T2, estimator = "MLR", missing = 'FIML')
+summary(fit_scal_Teac_parcel, fit.measures = TRUE, standardized = TRUE)
+
+```
+
+### Model Comparisons
+
+```{r Comparisonst}
+lavTestLRT(fit_conf_Teac_parcel, fit_metr_Teac_parcel)
+lavTestLRT(fit_metr_Teac_parcel, fit_scal_Teac_parcel)
+```
+
+# Model ACLPM
+## Model 1
+
+```{r model1}
+M1 <- '
+
+###################
+# STRUCTURAL PART #
+###################
+
+# Autoregressive paths (stability over time)
+T2_T_CLO ~ T_CLO
+T2_PRO ~ PRO
+
+# Cross-lagged paths and outcome
+T2_PRO ~ T_CLO        # Teacher closeness at T1 predicts loneliness at T2
+T2_T_CLO ~ a*PRO      # Loneliness at T1 predicts teacher closeness at T2 (path a)
+T2_ASC ~ PRO + b*T_CLO  # Academic performance predicted by loneliness and teacher closeness (path b)
+
+# Covariances at T1
+T_CLO ~~ PRO
+
+# Covariances at T2
+T2_T_CLO ~~ T2_PRO + T2_ASC
+T2_PRO ~~ T2_ASC
+
+# Indirect effect
+IND := a*b   # Indirect effect of PRO on T2_AA through T2_T_CLO
+'
+
+M1_fit<- sem(M1,
+             data = myData_T2,
+             missing = 'FIML',
+             estimator = "MLR")
+
+M1_summ <-summary(M1_fit, standardized = T,fit.measures = TRUE, rsquare = TRUE)
+M1_summ
+```
+
+## Model 2
+
+```{r model2}
+M2 <- gsub(
+  "T2_PRO ~ T_CLO", # old part to be replaced
+  "T2_PRO ~ 0*T_CLO",   # new part (fix to be zero the path `c`)
+  M1
+)
+M2_fit<- sem(M2,
+             data = myData_T2,
+             missing = 'FIML',
+             estimator = "MLR")
+
+M2_summ <-summary(M2_fit, standardized = T,fit.measures = TRUE, rsquare = TRUE)
+M2_summ
+```
+
+## Model 3
+
+```{r model3}
+M3 <- sub(
+  "# Indirect effect",
+  paste(
+    
+    "T2_T_CLO ~ D4_AGE + D5_SEX + SES",
+    "T2_PRO ~ D4_AGE + D5_SEX + SES",
+    "T2_ASC ~ D4_AGE + D5_SEX + SES",
+    "T_CLO ~ D4_AGE + D5_SEX + SES",
+    "PRO ~ D4_AGE + D5_SEX + SES",
+    "",
+    "# Indirect effect",
+    sep = "\n"
+  ),
+  M2
+)
+
+M3_fit<- sem(M3,
+             data = myData_T2,
+             missing = 'FIML',
+             estimator = "MLR")
+
+M3_summ <-summary(M3_fit, standardized = T,fit.measures = TRUE, rsquare = TRUE)
+M3_summ
+
+```
+
+
+
+## Nested Model Comparisons
+
+```{r Comparisonsm}
+lavTestLRT(M2_fit, M1_fit, method = "satorra.bentler.2001")
+```
+
+## Indirect Effect (Bootstrap)
+
+```{r Comparisons}
+# set.seed(2022)
+# ex5Boot <- lavaan::sem(model = M3_fit, data = myData_T2, se = "bootstrap", bootstrap = 5000)
+# a <-parameterEstimates(M3_fit, level = 0.95, boot.ci.type="bca.simple")
+# a
+```
+
+# Session info
+
+```{r session_info}
+sessionInfo()
+```
+
+
+
