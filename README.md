@@ -1,8 +1,8 @@
 ## Supplementary Material - Prosociality, Teacher-student Relationships and Academic Self-Concept in Mathematics (*Psychology Hub*, 2026)
 
-# This repository contains code and full results related to the following article:
+ This repository contains code and full results related to the following article:
 
-# > Zasso, S., Gaggero, G., Manfredi, Sailis, G., L., De Marco, L., & Sette, S. (2026).Prosociality, Teacher-Student Closeness, and Academic Self-Concept in Mathematics: An Autoregressive Cross-Lagged Panel Model in Early Adolescence. *Psychology Hub*, *31*(1), Article 2728838. []()
+ > Zasso, S., Gaggero, G., Manfredi, Sailis, G., L., De Marco, L., & Sette, S. (2026).Prosociality, Teacher-Student Closeness, and Academic Self-Concept in Mathematics: An Autoregressive Cross-Lagged Panel Model in Early Adolescence. *Psychology Hub*. []()
 
 This article is published under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
 
